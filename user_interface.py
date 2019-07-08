@@ -159,13 +159,14 @@ def interface():
         dataframe = ui.select_artists()
         # print(dataframe)
         print('There are', len(set(dataframe['artist'].tolist())), 'artists. These artists are:',
-              set(dataframe['artist'].tolist()))
+              set(dataframe['artist'].tolist()), 'with a total of', len(dataframe[section].tolist()), 'songs')
 
     # if bpm, then ask for range and get subset of dataframe
     elif choice == 'bpm':
         dataframe = ui.select_bpm()
         # print(dataframe)
-        print('The min bpm is:', dataframe['bpm'].min(), '. The max bpm is:', dataframe['bpm'].max())
+        print('The min bpm is:', dataframe['bpm'].min(), '. The max bpm is:', dataframe['bpm'].max(),
+              'with a total of', len(dataframe[section].tolist()), 'songs')
 
     # if both, then ask for artists and bpm_range
     elif choice == 'both':
@@ -173,7 +174,7 @@ def interface():
         # print(dataframe)
         print('The min bpm is:', dataframe['bpm'].min(), '. The max bpm is:', dataframe['bpm'].max())
         print('There are', len(set(dataframe['artist'].tolist())), 'artists. These artists are:',
-              set(dataframe['artist'].tolist()))
+              set(dataframe['artist'].tolist()), 'with a total of', len(dataframe[section].tolist()), 'songs')
 
     # clean texts
     entries = dataframe[section].tolist()

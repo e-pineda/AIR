@@ -4,15 +4,15 @@ import numpy as np
 import random
 import sys
 import user_interface
+from keras.models import load_model
 
 """
     Define global variables.
 """
 SEQUENCE_LENGTH = 40
 SEQUENCE_STEP = 3
-EPOCHS = 50
+EPOCHS = 20
 DIVERSITY = 1.0
-diversities = [0.1, 0.25, .3, .5, .75, .9, 1, 1.2]
 
 
 # get categories
@@ -52,13 +52,13 @@ model.fit(X, y, batch_size=128, nb_epoch=EPOCHS)
 """
 
 
-for diversity in diversities:
+for diversity in [0.1, 0.25, .5, .75, .9, 1, 1.2, 1.5, 2]:
     print()
     print('----- diversity:', diversity)
 
     generated = ''
     # insert your 40-chars long string. OBS it needs to be exactly 40 chars!
-    sentence = "bus on the wrist watch it shine im goin"
+    sentence = "rolling in the deep got me some type of "
     sentence = sentence.lower()
     generated += sentence
 
