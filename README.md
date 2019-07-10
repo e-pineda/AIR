@@ -25,8 +25,8 @@ To scrape additional song info, run control_spiders.py.
 
 To run the AI, run lyric_generator.py
 
-##Meta
-Elijah Pineda - epineda@conncoll.edu
+## Meta
+Elijah Pineda - epineda@conncoll.edu - 
 https://github.com/e-pineda
 
 ## License
