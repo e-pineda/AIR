@@ -82,7 +82,7 @@ class AirSpider(scrapy.Spider):
 
     # read in list of rappers
     def get_rapper_list(self):
-        with open('rapper_list.txt', 'r') as infile:
+        with open('test_rappers.txt', 'r') as infile:
             for line in infile:
                 self.rapper_list.append(line.strip())
         infile.close()

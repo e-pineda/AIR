@@ -1,10 +1,8 @@
 from __future__ import print_function
 import helper
 import numpy as np
-import random
 import sys
 import user_interface
-from keras.models import load_model
 
 """
     Define global variables.
