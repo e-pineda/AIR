@@ -63,8 +63,7 @@ class BpmSpider(scrapy.Spider):
         for rapper, song_title, bpm in zip(rappers, songs, bpm_list):
             try:
                 if bpm != 'YEEHAW':
-                    print('BPM PASSED', bpm, counter
-                          )
+                    print('BPM PASSED', bpm, counter)
                     counter += 1
                     continue
                 print('BPM CHECK', bpm, counter)

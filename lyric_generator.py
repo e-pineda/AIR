@@ -4,22 +4,18 @@ import numpy as np
 import sys
 import user_interface
 
-"""
-    Define global variables.
-"""
+
 SEQUENCE_LENGTH = 40
 SEQUENCE_STEP = 3
 EPOCHS = 20
 DIVERSITY = 1.0
-
+BATCH_SIZE = 256
 
 # get categories
 text = user_interface.interface()
 
 
-"""
-    Read the corpus and get unique characters from the corpus.
-"""
+# Get unique characters from the corpus
 chars = helper.extract_characters(text)
 
 """
@@ -43,7 +39,7 @@ model = helper.build_model(SEQUENCE_LENGTH, chars)
     Train the model
 """
 
-model.fit(X, y, batch_size=128, nb_epoch=EPOCHS)
+model.fit(X, y, batch_size=BATCH_SIZE, nb_epoch=EPOCHS)
 
 """
     Pick a random sequence and make the network continue
