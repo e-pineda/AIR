@@ -37,6 +37,24 @@ class SongItem(scrapy.Item):
 class AirSpider(scrapy.Spider):
     name = "genius"
 
+    @staticmethod
+    def update_rapper_list(rap_list, df):
+        scraped_artists = set(df['Artist'].tolist())
+        unfinished_artists = set(df[df['Link'] == "Unfinished"]['Artist'].values)
+
+        # finished artists = scraped artists - unfinished artists
+        # all artists that need to be rescraped or scraped will be left by rap_list - finished_artists
+        remaining_artists = set(rap_list) - (scraped_artists - unfinished_artists)
+
+        return list(remaining_artists)
+
+    @staticmethod
+    def check_unfinished_url_file(f_path):
+        serialized_file = Path(f_path)
+        if serialized_file.is_file():
+            return True
+        return False
+
     def __init__(self):
         self.df_cols = ['Artist', 'Link', 'Song Title', 'Features', 'Producers', 'Lyrics']
         self.bot_sleep_time = 3
@@ -69,6 +87,25 @@ class AirSpider(scrapy.Spider):
         chrome_options.add_argument("--disable-notifications")
         chrome_options.add_argument("--disable-default-apps")
         self.driver = webdriver.Chrome(chrome_options=chrome_options)
+
+
+    # serializes file
+    def serialize_urls(self, urls, artists, error, errored_artist=None):
+        if error:
+            print("APPENDED IN SERIALIZED FUNCTION")
+            urls.append('Unfinished'), artists.append(errored_artist)
+            print('LENGTH OF URLS', len(urls))
+
+        avail_columns = ['Artist', 'Link']
+        remaining_cols = [col for col in self.df_cols if col not in avail_columns]
+        empty_lists = [[None for i in range(len(urls))] for i in range(len(remaining_cols))]
+
+        df_values = dict(zip(remaining_cols, empty_lists))
+        df_values['Link'], df_values['Artist'] = urls, artists
+
+        dataframe = pd.DataFrame(df_values)
+        dataframe.to_csv('Serialized Link Scrape')
+        print('SERIALIZED')
 
     # sends requests to site for each artist name
     def start_requests(self):
@@ -110,23 +147,6 @@ class AirSpider(scrapy.Spider):
             self.serialize_urls(self.urls, self.artists, error, errored_artist=artist_name)
             print('There was an error, boutta dip outta here')
 
-    def serialize_urls(self, urls, artists, error, errored_artist=None):
-        if error:
-            print("APPENDED IN SERIALIZED FUNCTION")
-            urls.append('Unfinished'), artists.append(errored_artist)
-            print('LENGTH OF URLS', len(urls))
-
-        avail_columns = ['Artist', 'Link']
-        remaining_cols = [col for col in self.df_cols if col not in avail_columns]
-        empty_lists = [[None for i in range(len(urls))] for i in range(len(remaining_cols))]
-
-        df_values = dict(zip(remaining_cols, empty_lists))
-        df_values['Link'], df_values['Artist'] = urls, artists
-
-        dataframe = pd.DataFrame(df_values)
-        dataframe.to_csv('Serialized Link Scrape')
-        print('SERIALIZED')
-
     # get all songs
     def get_songs(self):
         lyric_url_set = set()
@@ -139,7 +159,6 @@ class AirSpider(scrapy.Spider):
         max_tries = 10
         curr_try = 0
         last_lyrics_urls = 0
-
 
         # get links to the articles
         try:
