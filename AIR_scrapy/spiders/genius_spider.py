@@ -42,6 +42,7 @@ class AirSpider(scrapy.Spider):
         self.bot_sleep_time = 3
         test_file = 'test_rappers.txt'
         prod_file = 'rapper_list.txt'
+        self.urls, self.artists = [], []
 
         # read in list of rappers
         def get_rapper_list():
@@ -81,17 +82,10 @@ class AirSpider(scrapy.Spider):
             # request to get lyrics
 
     def parse_urls(self, response):
-        def check_error():
-            if urls[1]:
-                return True
-            return False
-        
-        self.driver.get(response.url)
-        loop_flag = True
+        artist_name = response.meta.get('artist_name')
 
-        # Prepares the page to be scraped
-        while loop_flag:
-            artist_name = response.meta.get('artist_name')
+        try:
+            self.driver.get(response.url)
 
             # Show all songs by the artist
             self.driver.find_element_by_css_selector(
@@ -104,49 +98,34 @@ class AirSpider(scrapy.Spider):
             time.sleep(self.bot_sleep_time)
 
             # Get all songs barring duplicates and songs that the artist isnt spitting shit for
-            urls = self.get_songs()
-            print(len(urls))
-            self.serialize_urls(urls[0], artist_name)
+            urls, error = self.get_songs()
+            print('LENGTH OF UNALTERED SCRAPED URLS', len(urls))
 
-            # exit if needed
-            if check_error():
-                print('There was an error, boutta dip outta here')
-                sys.exit()
+            self.urls.extend(urls)
+            self.artists.extend([artist_name for i in range(len(urls))])
+            self.serialize_urls(self.urls, self.artists, error, errored_artist=artist_name)
 
-            loop_flag = False
+        except Exception as error:
+            print('caught the error')
+            self.serialize_urls(self.urls, self.artists, error, errored_artist=artist_name)
+            print('There was an error, boutta dip outta here')
 
-        # print('AMOUNT OF SONGS:', len(urls), len(urls))
-        #
-        # # Get lyrics for each of the songs
-        # for lyric_link in urls:
-        #     yield scrapy.Request(lyric_link, callback=self.get_lyrics, meta={'artist_name': artist_name,
-        #                                                                       'link': lyric_link})
+    def serialize_urls(self, urls, artists, error, errored_artist=None):
+        if error:
+            print("APPENDED IN SERIALIZED FUNCTION")
+            urls.append('Unfinished'), artists.append(errored_artist)
+            print('LENGTH OF URLS', len(urls))
 
-    def serialize_urls(self, urls, artist_name):
         avail_columns = ['Artist', 'Link']
         remaining_cols = [col for col in self.df_cols if col not in avail_columns]
         empty_lists = [[None for i in range(len(urls))] for i in range(len(remaining_cols))]
 
         df_values = dict(zip(remaining_cols, empty_lists))
-        df_values['Link'], df_values['Artist'] = urls, [artist_name for i in range(len(urls))]
+        df_values['Link'], df_values['Artist'] = urls, artists
 
         dataframe = pd.DataFrame(df_values)
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(dataframe)
         dataframe.to_csv('Serialized Link Scrape')
-
-    def get_lyrics(self, response):
-        soup = BeautifulSoup(response.text, 'html.parser')
-        # title = soup.css('h1.header_with_cover_art-primary_info-title::text').extract()[0]
-        # features =
-        # producers =
-
-        lyrics = soup.find("div", class_="lyrics").get_text()
-
-        # add lyrics to dataframe here
-
-        return {'lyrics': lyrics}
-
+        print('SERIALIZED')
 
     # get all songs
     def get_songs(self):
@@ -185,11 +164,20 @@ class AirSpider(scrapy.Spider):
             return (list(lyric_url_set), None)
 
         except Exception as e:
-            lyric_url_list = list(lyric_url_set)
-            missing_link_amt = s_results - len(lyric_url_set)
-            lyric_url_list.extend([None for i in range(missing_link_amt)])
-            print(len(lyric_url_list))
-            return (lyric_url_list, e)
+            print("ERRORED AT GET_SONGS FUNCTION")
+            return (list(lyric_url_set), e)
+
+    def get_lyrics(self, response):
+        soup = BeautifulSoup(response.text, 'html.parser')
+        # title = soup.css('h1.header_with_cover_art-primary_info-title::text').extract()[0]
+        # features =
+        # producers =
+
+        lyrics = soup.find("div", class_="lyrics").get_text()
+
+        # add lyrics to dataframe here
+
+        return {'lyrics': lyrics}
 
     # def correct_section_names(self, section_name, artist_name):
     #     if 'hook' in section_name or 'chorus' in section_name:
@@ -329,5 +317,7 @@ class AirSpider(scrapy.Spider):
     #                 continue
     #         cleaned_lyrics.append(bar)
     #     return cleaned_lyrics
+
+
 
 # take out breaks, non-stop, [?], skit
