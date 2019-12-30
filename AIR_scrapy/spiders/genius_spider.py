@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import logging
 from selenium.webdriver.remote.remote_connection import LOGGER
 import pandas as pd
+from pathlib import Path
 import sys
 LOGGER.setLevel(logging.WARNING)
 
@@ -29,11 +30,6 @@ class SongItem(scrapy.Item):
     skit = scrapy.Field()
 
 
-# read in serialized file if it exists
-# resume scraping
-# scrape lyrics
-
-
 class AirSpider(scrapy.Spider):
     name = "genius"
 
@@ -55,12 +51,32 @@ class AirSpider(scrapy.Spider):
             return True
         return False
 
+    # serializes file
+    def serialize_urls(self, urls, artists, error, errored_artist=None):
+        if error:
+            print("APPENDED IN SERIALIZED FUNCTION")
+            urls.append('Unfinished'), artists.append(errored_artist)
+            print('LENGTH OF URLS', len(urls))
+
+        avail_columns = ['Artist', 'Link']
+        remaining_cols = [col for col in self.df_cols if col not in avail_columns]
+        empty_lists = [[None for i in range(len(urls))] for i in range(len(remaining_cols))]
+
+        df_values = dict(zip(remaining_cols, empty_lists))
+        df_values['Link'], df_values['Artist'] = urls, artists
+
+        dataframe = pd.DataFrame(df_values)
+        dataframe.to_csv(self.serialized_file)
+        print('SERIALIZED')
+
     def __init__(self):
         self.df_cols = ['Artist', 'Link', 'Song Title', 'Features', 'Producers', 'Lyrics']
         self.bot_sleep_time = 3
         test_file = 'test_rappers.txt'
         prod_file = 'rapper_list.txt'
         self.urls, self.artists = [], []
+        self.skip_url_flag = False
+        self.serialized_file = 'Serialized Link Scrape'
 
         # read in list of rappers
         def get_rapper_list():
@@ -86,37 +102,62 @@ class AirSpider(scrapy.Spider):
         chrome_options.add_argument("--disable-login-animations")
         chrome_options.add_argument("--disable-notifications")
         chrome_options.add_argument("--disable-default-apps")
-        self.driver = webdriver.Chrome(chrome_options=chrome_options)
 
+        # if an unfinished serialized file exists, read in and resume from artist that errored out
+        if self.check_unfinished_url_file(self.serialized_file):
+            df = pd.read_csv(self.serialized_file, index_col=[0]).astype(str)
 
-    # serializes file
-    def serialize_urls(self, urls, artists, error, errored_artist=None):
-        if error:
-            print("APPENDED IN SERIALIZED FUNCTION")
-            urls.append('Unfinished'), artists.append(errored_artist)
-            print('LENGTH OF URLS', len(urls))
+            # update rapper list to get remainder of artists
+            self.rapper_list = self.update_rapper_list(self.rapper_list, df)
 
-        avail_columns = ['Artist', 'Link']
-        remaining_cols = [col for col in self.df_cols if col not in avail_columns]
-        empty_lists = [[None for i in range(len(urls))] for i in range(len(remaining_cols))]
+            # remove all rows that are unfinished
+            rows_to_be_dropped = df[df['Link'] == "Unfinished"]['Artist'].index
+            df.drop(rows_to_be_dropped, inplace=True)
 
-        df_values = dict(zip(remaining_cols, empty_lists))
-        df_values['Link'], df_values['Artist'] = urls, artists
+            # reset tracking lists that will be used as dataframe columns
+            self.artists, self.urls = list(df["Artist"]), list(df["Link"])
 
-        dataframe = pd.DataFrame(df_values)
-        dataframe.to_csv('Serialized Link Scrape')
-        print('SERIALIZED')
+        # if a serialized file exists with links completed, skip to links
+        if len(self.rapper_list) == 0:
+            self.skip_url_flag = True
 
-    # sends requests to site for each artist name
+        # launch driver to scrape the rap links -- driver is needed because you have to interact with java
+        if not self.skip_url_flag:
+            self.driver = webdriver.Chrome(chrome_options=chrome_options)
+
     def start_requests(self):
-        og_url = 'https://genius.com/artists/'
-        for artist in self.rapper_list:
-            print('Scraping:', artist)
-            
-            # request to get links; will serialize links to csv if spider fails
-            yield scrapy.Request(url=og_url+artist, callback=self.parse_urls, meta={'artist_name': artist})
-            
-            # request to get lyrics
+        # if needed, loop through every artist and get links to every song --will serialize links to csv if spider fails
+        if self.skip_url_flag:
+            print("SKIPPED SCRAPING THE ARTISTS' SONGS")
+        else:
+            for artist in self.rapper_list:
+                print('Scraping:', artist)
+                yield scrapy.Request(url='https://genius.com/artists/' + artist, callback=self.parse_urls,
+                                     meta={'artist_name': artist})
+
+        # get lyrics for song urls scraped above
+        for link in self.link_col:
+            yield scrapy.Request(url=link, callback=self.parse_lyrics)
+
+    def parse_lyrics(self, response):
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        try:
+            lyrics = soup.find("div", class_="song_body-lyrics").get_text()
+            title = soup.find('h1', class_='header_with_cover_art-primary_info-title').get_text()
+
+            # will take who it is written by
+            song_info = soup.find('div', class_='u-xx_large_vertical_margins show_tiny_edit_button_on_hover')
+            features = song_info.find("span", class_='metadata_unit-info').get_text()
+
+            self.lyric_col.append(lyrics)
+            self.song_title_col.append(title)
+            self.features_col.append(features.strip('\n'))
+
+        except Exception as e:
+            print("ERROR: ", e)
+            self.serialize(name="Unfinished Lyric Scrape.csv")
+            sys.exit()
 
     def parse_urls(self, response):
         artist_name = response.meta.get('artist_name')
@@ -138,6 +179,8 @@ class AirSpider(scrapy.Spider):
             urls, error = self.get_songs()
             print('LENGTH OF UNALTERED SCRAPED URLS', len(urls))
 
+            print("ALL URLS", self.urls)
+            print("NEW URLS", urls)
             self.urls.extend(urls)
             self.artists.extend([artist_name for i in range(len(urls))])
             self.serialize_urls(self.urls, self.artists, error, errored_artist=artist_name)
