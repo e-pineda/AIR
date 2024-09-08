@@ -180,5 +180,5 @@ def interface():
     entries = dataframe[section].tolist()
     text = ''
     for entry in entries:
-        text += entry.lower().strip('\n')
+        text += entry.lower()
     return text
