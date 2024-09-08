@@ -1,0 +1,6 @@
+
+
+Prompt User for example bar, if none given, then use a default bar
+acquire relevant data(done)
+format data into prompt dataset(need to do)
+retrain model used formatted dataset(need to do)

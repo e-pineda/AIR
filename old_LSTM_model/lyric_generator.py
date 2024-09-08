@@ -1,5 +1,5 @@
 from __future__ import print_function
-import helper
+import old_LSTM_model.helper as helper
 import numpy as np
 import sys
 import user_interface
