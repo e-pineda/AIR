@@ -19,7 +19,7 @@ class UserInterface(object):
         self.selectable_parts.remove('title')
         self.selectable_parts.remove('artist')
 
-        self.artist_amount = 5
+        self.artist_amount = 1
 
         self.temp_df = None
         self.temp_artists = []
@@ -180,5 +180,5 @@ def interface():
     entries = dataframe[section].tolist()
     text = ''
     for entry in entries:
-        text += entry.lower()
+        text += entry.lower().strip('\n')
     return text

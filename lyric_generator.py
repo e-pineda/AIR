@@ -7,13 +7,12 @@ import user_interface
 
 SEQUENCE_LENGTH = 40
 SEQUENCE_STEP = 3
-EPOCHS = 20
+EPOCHS = 10
 DIVERSITY = 1.0
 BATCH_SIZE = 256
 
 # get categories
 text = user_interface.interface()
-
 
 # Get unique characters from the corpus
 chars = helper.extract_characters(text)
@@ -24,6 +23,7 @@ chars = helper.extract_characters(text)
 """
 sequences, next_chars = helper.create_sequences(text, SEQUENCE_LENGTH, SEQUENCE_STEP)
 char_to_index, indices_char = helper.get_chars_index_dicts(chars)
+print(sequences)
 
 """
     The network is not able to work with characters and strings, we need to vectorise.
@@ -39,7 +39,7 @@ model = helper.build_model(SEQUENCE_LENGTH, chars)
     Train the model
 """
 
-model.fit(X, y, batch_size=BATCH_SIZE, nb_epoch=EPOCHS)
+model.fit(X, y, batch_size=BATCH_SIZE, epochs=EPOCHS)
 
 """
     Pick a random sequence and make the network continue

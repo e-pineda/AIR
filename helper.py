@@ -21,7 +21,7 @@ def build_model(sequence_length, chars):
     model.add(Dense(len(chars)))
     model.add(Activation('softmax'))
 
-    optimizer = RMSprop(lr=0.01)
+    optimizer = RMSprop(learning_rate=0.01)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
     return model
 
@@ -40,7 +40,9 @@ def sample(preds, temperature=1.0):
 
 
 def extract_characters(text):
-    return sorted(list(set(text)))
+    chars = sorted(list(set(text)))
+    # filtered_chars = [char for char in chars if char.isalpha()]
+    return chars
 
 
 def get_chars_index_dicts(chars):
@@ -53,8 +55,8 @@ def read_corpus(path):
 
 
 def vectorize(sequences, sequence_length, chars, char_to_index, next_chars):
-    X = np.zeros((len(sequences), sequence_length, len(chars)), dtype=np.bool)
-    y = np.zeros((len(sequences), len(chars)), dtype=np.bool)
+    X = np.zeros((len(sequences), sequence_length, len(chars)), dtype=np.bool_)
+    y = np.zeros((len(sequences), len(chars)), dtype=np.bool_)
     for i, sentence in enumerate(sequences):
         for t, char in enumerate(sentence):
             X[i, t, char_to_index[char]] = 1
