@@ -65,7 +65,17 @@ class UserInterface(object):
         # Get dataframe with appropiate data
         self.temp_df = self.temp_df.loc[self.temp_df['artist'].isin(selected_artists)]
         appropiate_df = self.temp_df[['artist', 'title', self.temp_section]]
-        return appropiate_df
+
+        question_list = []
+        for artist in selected_artists:
+            artist_song_amt = len(self.temp_df.loc[self.temp_df['artist'] == artist])
+            questions = [f'Write a {self.temp_section} like {artist}'] * artist_song_amt
+            question_list.extend(questions)
+
+        new_df = pd.DataFrame({'question': question_list, 'answer': appropiate_df[self.temp_section]})
+
+        return new_df
+
 
     def get_artists(self):
         # prompts user for their artists selection
@@ -152,33 +162,33 @@ def interface():
     section = ui.select_song_section()
 
     # choose training_method
-    choice = ui.choose_training_method()
+    # choice = ui.choose_training_method()
+    choice = 'artist'
 
     # if artist, then continue to ui.select_artists()
     if choice == 'artist':
         dataframe = ui.select_artists()
         # print(dataframe)
-        print('There are', len(set(dataframe['artist'].tolist())), 'artists. These artists are:',
-              set(dataframe['artist'].tolist()), 'with a total of', len(dataframe[section].tolist()), 'songs')
+        print('There are a total of', len(dataframe), 'songs')
 
     # if bpm, then ask for range and get subset of dataframe
-    elif choice == 'bpm':
-        dataframe = ui.select_bpm()
-        # print(dataframe)
-        print('The min bpm is:', dataframe['bpm'].min(), '. The max bpm is:', dataframe['bpm'].max(),
-              'with a total of', len(dataframe[section].tolist()), 'songs')
+    # elif choice == 'bpm':
+    #     dataframe = ui.select_bpm()
+    #     # print(dataframe)
+    #     print('The min bpm is:', dataframe['bpm'].min(), '. The max bpm is:', dataframe['bpm'].max(),
+    #           'with a total of', len(dataframe[section].tolist()), 'songs')
 
     # if both, then ask for artists and bpm_range
-    elif choice == 'both':
-        dataframe = ui.select_both()
-        # print(dataframe)
-        print('The min bpm is:', dataframe['bpm'].min(), '. The max bpm is:', dataframe['bpm'].max())
-        print('There are', len(set(dataframe['artist'].tolist())), 'artists. These artists are:',
-              set(dataframe['artist'].tolist()), 'with a total of', len(dataframe[section].tolist()), 'songs')
+    # elif choice == 'both':
+    #     dataframe = ui.select_both()
+    #     # print(dataframe)
+    #     print('The min bpm is:', dataframe['bpm'].min(), '. The max bpm is:', dataframe['bpm'].max())
+    #     print('There are', len(set(dataframe['artist'].tolist())), 'artists. These artists are:',
+    #           set(dataframe['artist'].tolist()), 'with a total of', len(dataframe[section].tolist()), 'songs')
 
     # clean texts
-    entries = dataframe[section].tolist()
-    text = ''
-    for entry in entries:
-        text += entry.lower()
-    return text
+    # entries = dataframe[section].tolist()
+    # text = ''
+    # for entry in entries:
+    #     text += entry.lower()
+    return dataframe, section, ui.temp_artists
