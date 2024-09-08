@@ -6,7 +6,7 @@ from peft import LoraConfig
 
 class LLM:
     def __init__(self, artist, song_section):
-        self.model_name = "mistralai/Mistral-7B-v0.1"
+        self.model_name = "mistralai/Mistral-7B-Instruct-v0.2"
         self.model = AutoModelForCausalLM.from_pretrained(self.model_name, device_map='auto', load_in_4bit=True)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, padding_side="left")
         self.tokenizer.pad_token = self.tokenizer.eos_token  # Most LLMs don't have a pad token by default
@@ -15,7 +15,7 @@ class LLM:
         self.artist = artist
 
         self.sft_config = SFTConfig(
-            max_seq_length=100,
+            max_seq_length=40,
             output_dir="/tmp",
         )
 
@@ -24,7 +24,7 @@ class LLM:
             lora_alpha=32,
             lora_dropout=0.05,
             bias="none",
-            task_type="QUESTION_ANS",
+            task_type="CAUSAL_LM",
         )
 
 
@@ -49,7 +49,7 @@ class LLM:
         trainer.train()
 
     def write_lyrics(self):
-        model_inputs = self.tokenizer([f"### Question: Write a {self.song_section} like {self.artist}"], return_tensors="pt", padding=True)
+        model_inputs = self.tokenizer([f"Write a {self.song_section} like {self.artist}"], return_tensors="pt", padding=True)
 
         generated_ids = self.model.generate(**model_inputs)
         results = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)

@@ -23,6 +23,7 @@ class UserInterface(object):
 
         self.temp_df = None
         self.temp_artists = []
+        self.selected_artists = None
         self.temp_section = ''
         self.abs_min_bpm = None
         self.abs_max_bpm = None
@@ -60,14 +61,14 @@ class UserInterface(object):
         self.load_available_artists()
 
         # get users's artists
-        selected_artists = self.get_artists()
+        self.selected_artists = self.get_artists()
 
         # Get dataframe with appropiate data
-        self.temp_df = self.temp_df.loc[self.temp_df['artist'].isin(selected_artists)]
+        self.temp_df = self.temp_df.loc[self.temp_df['artist'].isin(self.selected_artists)]
         appropiate_df = self.temp_df[['artist', 'title', self.temp_section]]
 
         question_list = []
-        for artist in selected_artists:
+        for artist in self.selected_artists:
             artist_song_amt = len(self.temp_df.loc[self.temp_df['artist'] == artist])
             questions = [f'Write a {self.temp_section} like {artist}'] * artist_song_amt
             question_list.extend(questions)
@@ -136,10 +137,10 @@ class UserInterface(object):
         self.load_available_artists()
 
         # get users's artists
-        selected_artists = self.get_artists()
+        self.selected_artists = self.get_artists()
 
         # Get dataframe with appropiate artist data
-        self.temp_df = self.temp_df.loc[self.temp_df['artist'].isin(selected_artists)]
+        self.temp_df = self.temp_df.loc[self.temp_df['artist'].isin(self.selected_artists)]
 
         # show range of bpms
         self.load_bpm_range()
@@ -191,4 +192,4 @@ def interface():
     # text = ''
     # for entry in entries:
     #     text += entry.lower()
-    return dataframe, section, ui.temp_artists
+    return dataframe, section, ui.selected_artists

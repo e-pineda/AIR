@@ -5,8 +5,9 @@ from LLM import *
 text, section, artists = user_interface.interface()
 
 print(text)
+print(artists)
 
-LLM_model = LLM(section, artists[0])
+LLM_model = LLM(artists[0], section)
 LLM_model.finetune(text)
 
 lyrics = LLM_model.write_lyrics()
